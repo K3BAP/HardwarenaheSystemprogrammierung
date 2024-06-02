@@ -20,6 +20,13 @@ Für die Bestimmung des Speicherverbrauchs wurde die Bibliothek `memory_profiler
 
 ## Aufgabe 3
 ### Variante 1: R
-Wenn große Datenmengen verarbeitet werden müssen, greifen Statistiker gerne auf die Programmiersprache R zurück. Mal sehen, ob sich das auch in unserem Fall bewähren kann. Ich schreibe diese Zeilen noch vor dem Memory Profiling, habe jedoch das Programm schon mal laufen lassen. Allein die Laufzeit ist um ein Vielfaches schneller als die des Python-Programms. Ich verwende R in der Version 4.4.0.
+Wenn große Datenmengen verarbeitet werden müssen, greifen Statistiker gerne auf die Programmiersprache R zurück. Mal sehen, ob sich das auch in unserem Fall bewähren kann. Ich schreibe diese Zeilen noch vor dem Memory Profiling, habe jedoch das Programm schon mal laufen lassen. Allein die Laufzeit ist gefühlt um ein Vielfaches schneller als die des Python-Programms. Ich verwende R in der Version 4.4.0.
 
 Für das Profiling habe ich Rprof mit der Option `memory.profiler = TRUE` verwendet. Die Gesamtspeichernutzung der Main-Funktion lag laut Rprof bei knap 88 MB. Die Konfigurationsoptionen sowie die Hardware und das Betriebssystem sind die selben wie in Aufgabe 2 gewesen.
+
+### Variante 2: JavaScript
+An welche Programmiersprache denkt man als letztes, wenn es um effiziente und hardwarenahe Programme geht? Richtig: JavaScript. Drum habe ich mich entschieden, Node.js auch mal eine Chance zu geben, sein Potenzial zu demonstrieren. Die Chrome Dev Tools können verwendet werden, um ein Memory Profile einer Node.js Applikation durchzuführen.
+
+*Anmerkung: Ich warte gerade darauf, dass das Programm endlich fertig wird... Also Laufzeitkönig wird Node.js sicherlich nicht. Ich beobachte aber die Heap Size über die Chrome Dev Tools, das scheint zumindest dahingehend nicht so schlimm zu sein wie Python.*
+
+Eine Ewigkeit später kann ich nun verkünden, dass der Speicherbedarf bei etwa 147 MB lag. Die Konfigurationsoptionen sowie die Hardware und das Betriebssystem sind wieder die selben wie in Aufgabe 2 gewesen.
