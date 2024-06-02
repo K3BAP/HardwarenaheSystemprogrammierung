@@ -71,18 +71,18 @@ main <- function(filename, block_size, max_samples, threshold_ratio = 0.8) {
 setwd("/home/fabian/programming/HardwarenaheSystemprogrammierung/aufgabenblatt_1")
 filename <- "./Python/nicht_zu_laut_abspielen.wav"  # Pfad zur WAV-Datei anpassen
 block_size <- 1024  # Blockgröße anpassen
-max_samples <- 5000  # Maximale Anzahl der Blöcke
+max_samples <- 500000  # Maximale Anzahl der Blöcke
 threshold_ratio <- 0.1  # Prozentsatz der höchsten Amplitude im Block
 
-# Start profiling
-Rprofmem(filename="memory_profile.out")
+# Profiler starten
+Rprof(filename="memory_profile.out", memory.profiling=TRUE)
 
 # Ausführen der Hauptfunktion
 main(filename, block_size, max_samples, threshold_ratio)
 
-# Stop profiling
-Rprofmem(NULL)
+# Profiler stoppen
+Rprof(NULL)
 
-# Analyze the output file (memory_profile.out)
-summaryRprof("memory_profile.out")
+# Profiling-Daten analysieren
+summaryRprof("memory_profile.out", memory = "both")
 
