@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 from matplotlib.ticker import ScalarFormatter
-from memory_profiler import profile
 
 
 def read_wav_file(filename):
@@ -24,7 +23,6 @@ def perform_fft(block, sample_rate):
     amplitudes = np.abs(fft_values)
     return freqs, amplitudes
 
-@profile
 def main(filename, block_size, max_samples):
     sample_rate, data = read_wav_file(filename)
     print(f'Sample Rate: {sample_rate} Hz')
@@ -72,5 +70,5 @@ def main(filename, block_size, max_samples):
 if __name__ == "__main__":
     filename = "nicht_zu_laut_abspielen.wav"  # Replace with your .wav file path
     block_size = 1024  # Choose your block size
-    max_samples = 100000
+    max_samples = 500000
     main(filename, block_size, max_samples)
