@@ -1,13 +1,14 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <fstream>
 #include <sndfile.h>
 #include <complex>
 #include <chrono>
-#include <CL/opencl.hpp>
-#include <clFFT.h>
+#include <CL/cl2.hpp>
 
-void fft_clfft(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output, unsigned int block_size, unsigned int step_width, unsigned int num_blocks, unsigned int total_samples) {
+// Function to perform FFT block processing using OpenCL
+void fft_opencl(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output, unsigned int block_size, unsigned int step_width, unsigned int num_blocks, unsigned int total_samples) {
     std::vector<cl_float2> input_cl(total_samples);
     std::vector<cl_float2> output_cl(num_blocks * block_size);
 
@@ -25,44 +26,34 @@ void fft_clfft(const std::vector<std::complex<double>>& input, std::vector<std::
     cl::Device device = devices.front();
 
     cl::Context context(device);
-    cl::CommandQueue queue(context, device);
+    cl::Program::Sources sources;
+
+    std::ifstream kernel_file("fft_block_kernel.cl");
+    std::string kernel_code((std::istreambuf_iterator<char>(kernel_file)), std::istreambuf_iterator<char>());
+    sources.push_back({kernel_code.c_str(), kernel_code.length()});
+
+    cl::Program program(context, sources);
+    program.build({device});
 
     cl::Buffer buffer_input(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(cl_float2) * total_samples, input_cl.data());
     cl::Buffer buffer_output(context, CL_MEM_WRITE_ONLY, sizeof(cl_float2) * num_blocks * block_size);
 
-    // Setup clFFT
-    clfftPlanHandle plan;
-    size_t cl_lengths[1] = { block_size };
-    clfftSetupData fftSetup;
-    clfftInitSetupData(&fftSetup);
-    clfftSetup(&fftSetup);
-    clfftCreateDefaultPlan(&plan, context(), CLFFT_1D, cl_lengths);
+    cl::Kernel kernel(program, "fft_block");
+    kernel.setArg(0, buffer_input);
+    kernel.setArg(1, buffer_output);
+    kernel.setArg(2, block_size);
+    kernel.setArg(3, step_width);
+    kernel.setArg(4, num_blocks);
+    kernel.setArg(5, total_samples);
+    kernel.setArg(6, 0); // Not inverse FFT
 
-    clfftSetPlanPrecision(plan, CLFFT_SINGLE);
-    clfftSetLayout(plan, CLFFT_COMPLEX_INTERLEAVED, CLFFT_COMPLEX_INTERLEAVED);
-    clfftSetResultLocation(plan, CLFFT_OUTOFPLACE);
-
-    clfftBakePlan(plan, 1, &(queue()) , NULL, NULL);
-
-    for (unsigned int i = 0; i < num_blocks; ++i) {
-        size_t input_offset = i * step_width;
-        if (input_offset + block_size > total_samples) break;
-
-        // Execute the FFT
-        clfftEnqueueTransform(plan, CLFFT_FORWARD, 1, &(queue()), 0, NULL, NULL, &buffer_input(), &buffer_output(), NULL);
-        queue.finish();
-    }
-
-    // Read back the results
+    cl::CommandQueue queue(context, device);
+    queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(num_blocks), cl::NullRange);
     queue.enqueueReadBuffer(buffer_output, CL_TRUE, 0, sizeof(cl_float2) * num_blocks * block_size, output_cl.data());
 
     for (unsigned int i = 0; i < num_blocks * block_size; ++i) {
         output[i] = std::complex<double>(output_cl[i].s[0], output_cl[i].s[1]);
     }
-
-    // Cleanup clFFT
-    clfftDestroyPlan(&plan);
-    clfftTeardown();
 }
 
 void analyze(const std::string& filepath, int block_size, int step_width, double amplitude_threshold) {
@@ -109,8 +100,8 @@ void analyze(const std::string& filepath, int block_size, int step_width, double
     }
     std::vector<std::complex<double>> output(num_blocks * block_size);
 
-    // Perform FFT using clFFT
-    fft_clfft(input, output, block_size, step_width, num_blocks, sfinfo.frames);
+    // Perform FFT using OpenCL
+    fft_opencl(input, output, block_size, step_width, num_blocks, sfinfo.frames);
 
     // Aggregate the results
     for (int block = 0; block < num_blocks; ++block) {

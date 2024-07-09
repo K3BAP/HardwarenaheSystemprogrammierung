@@ -7,7 +7,7 @@ CXX = g++
 CXXFLAGS = -Wall -O2
 
 # Libraries
-LIBS = -lsndfile -lm -lOpenCL -lclFFT
+LIBS = -lsndfile -lm -lOpenCL
 
 # Source files
 SRC = fourier_opencl.cpp
@@ -19,7 +19,7 @@ TARGET = fourier_opencl
 all: $(TARGET)
 
 $(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) -D CL_TARGET_OPENCL_VERSION=200 -o $(TARGET) $(SRC) $(LIBS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC) $(LIBS)
 
 # Clean target
 clean:
