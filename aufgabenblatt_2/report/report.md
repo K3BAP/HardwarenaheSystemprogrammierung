@@ -63,3 +63,83 @@ Ich habe mich gefragt, ob eine Oktavierung des Tons auf 840hz vielleicht besonde
 Der vollständigkeit halber: Auch hier waren alle Programme erfolgreich. Aufgrund der niedrigeren individuellen Amplituden in diesem Sample musste ich allerdings die Threshold-Werte etwas reduzieren:
 
 <img src="./img/experiment_random.png">
+
+### Laufzeitanalyse und Vergleiche
+Ich habe die Laufzeit auf zwei verschiedenen Systemen getestet, hier folgen die Konfigurationen:
+
+#### Testsystem 1
+<table>
+    <tr>
+        <th>Parameter</th>
+        <th>Wert</th>
+    </tr>
+    <tr>
+        <td>Betriebssystem</td>
+        <td>Arch Linux</td>
+    </tr>
+    <tr>
+        <td>Kernel Version</td>
+        <td>Linux 6.9.9-arch1-1</td>
+    </tr>
+    <tr>
+        <td>CPU Modell</td>
+        <td>Intel Core i5-2500K</td>
+    </tr>
+    <tr>
+        <td>CPU Taktfrequenz</td>
+        <td>3.70 GHz</td>
+    </tr>
+    <tr>
+        <td>CPU Kernanzahl</td>
+        <td>4</td>
+    </tr>
+    <tr>
+        <td>CPU HyperThreading Support</td>
+        <td>Nein</td>
+    </tr>
+    <tr>
+        <td>GPU Modell</td>
+        <td>NVIDIA GeForce GTX 1650</td>
+    </tr>
+    <tr>
+        <td>Anzahl GPU-Cores</td>
+        <td>896</td>
+    </tr>
+    <tr>
+        <td>GPU Clock</td>
+        <td>2160 MHz</td>
+    </tr>
+    <tr>
+        <td>GPU VRAM</td>
+        <td>4 GB</td>
+    </tr>
+</table>
+
+
+Für die Laufzeitanalyse habe ich mich entschieden, die Datei `octave_100s.wav` aus den vorhergehenden Experimenten zu verwenden, da diese besonders klare Ergebnisse lieferte. Um die gewünschte Laufzeit von 5 - 10 Minuten zu erzielen, habe ich jedoch die Länge der Datei verdreifacht auf 300 sekunden. Die resultierende Datei ist `octave_300s.wav`. Zunächst experimentierte ich mit der sequenziellen Lösung herum, bis ich Parameter fand, die in dem gewünschten Laufzeitbereich zwischen 5 und 10 Minuten lagen. Mit den Parametern Block-Size = 512 und Step-Width = 2 kam ich mit der Sequentiellen Lösung so auf eine passende Laufzeit. 
+
+Leider sprengte die Anzahl der Blöcke in der OpenCL-Implementierung die maximale Größe von Vektoren, sodass ich das Programm mit diesen Parametern nicht ausführen konnte. Also musste ich den Code erneut verändern, um in diesem Fall die Daten über mehrere Vektoren zu verteilen und den OpenCL-Kernel mehrmals laufen zu lassen.
+
+#### Laufzeiten Testsystem 1
+<table>
+    <tr>
+        <th>Programm</th>
+        <th>Laufzeit</th>
+        <th>Rel. Speedup</th>
+    </tr>
+    <tr>
+        <td>Base</td>
+        <td>538 s</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>Threads</td>
+        <td>157 s</td>
+        <td>3,43 (k = 4)</td>
+    </tr>
+    <tr>
+        <td>OpenCL</td>
+        <td></td>
+        <td></td>
+    </tr>
+</table>
