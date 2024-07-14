@@ -1,149 +1,136 @@
 #include <iostream>
+#include <ostream>
 #include <vector>
 #include <cmath>
-#include <fstream>
 #include <sndfile.h>
-#include <complex>
-#include <chrono>
 #include <CL/cl2.hpp>
 
-// Function to perform FFT block processing using OpenCL
-void fft_opencl(const std::vector<std::complex<double>>& input, std::vector<std::complex<double>>& output, unsigned int block_size, unsigned int step_width, unsigned int num_blocks, unsigned int total_samples) {
-    std::vector<cl_float2> input_cl(total_samples);
-    std::vector<cl_float2> output_cl(num_blocks * block_size);
-
-    for (unsigned int i = 0; i < total_samples; ++i) {
-        input_cl[i].s[0] = input[i].real();
-        input_cl[i].s[1] = input[i].imag();
-    }
-
-    std::vector<cl::Platform> platforms;
-    cl::Platform::get(&platforms);
-    cl::Platform platform = platforms.front();
-
-    std::vector<cl::Device> devices;
-    platform.getDevices(CL_DEVICE_TYPE_GPU, &devices);
-    cl::Device device = devices.front();
-
-    cl::Context context(device);
-    cl::Program::Sources sources;
-
-    std::ifstream kernel_file("fft_block_kernel.cl");
-    std::string kernel_code((std::istreambuf_iterator<char>(kernel_file)), std::istreambuf_iterator<char>());
-    sources.push_back({kernel_code.c_str(), kernel_code.length()});
-
-    cl::Program program(context, sources);
-    program.build({device});
-
-    cl::Buffer buffer_input(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(cl_float2) * total_samples, input_cl.data());
-    cl::Buffer buffer_output(context, CL_MEM_WRITE_ONLY, sizeof(cl_float2) * num_blocks * block_size);
-
-    cl::Kernel kernel(program, "fft_block");
-    kernel.setArg(0, buffer_input);
-    kernel.setArg(1, buffer_output);
-    kernel.setArg(2, block_size);
-    kernel.setArg(3, step_width);
-    kernel.setArg(4, num_blocks);
-    kernel.setArg(5, total_samples);
-    kernel.setArg(6, 0); // Not inverse FFT
-
-    cl::CommandQueue queue(context, device);
-    queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(num_blocks), cl::NullRange);
-    queue.enqueueReadBuffer(buffer_output, CL_TRUE, 0, sizeof(cl_float2) * num_blocks * block_size, output_cl.data());
-
-    for (unsigned int i = 0; i < num_blocks * block_size; ++i) {
-        output[i] = std::complex<double>(output_cl[i].s[0], output_cl[i].s[1]);
-    }
-}
-
-void analyze(const std::string& filepath, int block_size, int step_width, double amplitude_threshold) {
-    // Open the WAV file
+// Function to read WAV file
+std::pair<int, std::vector<float>> read_wav_file(const std::string& filename) {
     SF_INFO sfinfo;
-    SNDFILE* infile = sf_open(filepath.c_str(), SFM_READ, &sfinfo);
+    SNDFILE* infile = sf_open(filename.c_str(), SFM_READ, &sfinfo);
     if (!infile) {
-        std::cerr << "Error opening file: " << filepath << std::endl;
-        return;
+        std::cerr << "Error reading WAV file: " << filename << std::endl;
+        exit(1);
     }
 
-    // Ensure block_size and step_width are valid
-    if (block_size < 64 || block_size > 512) {
-        std::cerr << "Block size must be between 64 and 512" << std::endl;
-        sf_close(infile);
-        return;
-    }
-    if (step_width < 1 || step_width > block_size) {
-        std::cerr << "Step width must be between 1 and block size" << std::endl;
-        sf_close(infile);
-        return;
-    }
-
-    // Buffer to hold samples
-    std::vector<double> samples(sfinfo.frames);
-    std::vector<double> amplitude_sums(block_size / 2 + 1, 0.0);
-    int block_count = 0;
-
-    // Read the entire file into a buffer for efficient processing
-    sf_count_t frames_read = sf_read_double(infile, samples.data(), sfinfo.frames);
-    if (frames_read != sfinfo.frames) {
-        std::cerr << "Error reading samples from file." << std::endl;
-        sf_close(infile);
-        return;
-    }
-
-    // Calculate the number of blocks to process
-    int num_blocks = (sfinfo.frames - block_size + step_width) / step_width;
-
-    // Prepare the input for OpenCL
-    std::vector<std::complex<double>> input(sfinfo.frames);
-    for (size_t i = 0; i < samples.size(); ++i) {
-        input[i] = std::complex<double>(samples[i], 0.0);
-    }
-    std::vector<std::complex<double>> output(num_blocks * block_size);
-
-    // Perform FFT using OpenCL
-    fft_opencl(input, output, block_size, step_width, num_blocks, sfinfo.frames);
-
-    // Aggregate the results
-    for (int block = 0; block < num_blocks; ++block) {
-        for (int i = 0; i <= block_size / 2; ++i) {
-            double amplitude = std::abs(output[block * block_size + i]) / block_size;
-            amplitude_sums[i] += amplitude;
-        }
-        block_count++;
-    }
-
-    // Average amplitudes
-    for (auto& amplitude : amplitude_sums) {
-        amplitude /= block_count;
-    }
-
-    // Output frequencies with amplitude above threshold
-    double frequency_step = static_cast<double>(sfinfo.samplerate) / block_size;
-    for (size_t i = 0; i <= block_size / 2; ++i) {
-        if (amplitude_sums[i] > amplitude_threshold) {
-            std::cout << "Frequency: " << i * frequency_step << " Hz, Amplitude: " << amplitude_sums[i] << std::endl;
-        }
-    }
-
-    // Cleanup
+    std::vector<float> data(sfinfo.frames);
+    sf_read_float(infile, data.data(), sfinfo.frames);
     sf_close(infile);
+    std::cout << "Frames: " << sfinfo.frames << std::endl;
+    return {sfinfo.samplerate, data};
 }
 
+// OpenCL FFT Kernel
+const char* kernelSource = R"(
+__kernel void fft(__global const float* data, __global float* fft_blocks, int block_size, int offset, int num_blocks) {
+    int i = get_global_id(0);
+    if (i < num_blocks) {
+        for (int j = 0; j < block_size / 2; j++) {
+            float real = 0.0;
+            float imag = 0.0;
+            for (int k = 0; k < block_size; k++) {
+                float angle = -2.0f * 3.141592653589793f * j * k / block_size;
+                real += data[i * offset + k] * cos(angle);
+                imag += data[i * offset + k] * sin(angle);
+            }
+            fft_blocks[i * (block_size / 2) + j] = sqrt(real * real + imag * imag);
+        }
+    }
+}
+)";
+
+// Function to perform FFT on GPU
+std::pair<std::vector<float>, std::vector<float>> perform_fft_gpu(cl::Context& context, cl::CommandQueue& queue, const std::vector<float>& data, int block_size, int offset, int sample_rate) {
+    cl::Program program(context, kernelSource);
+    program.build();
+
+    int num_blocks = (data.size() - block_size) / offset + 1;
+    std::cout << "Block count: " << num_blocks << std::endl;
+    std::cout << "Data size: " << data.size() << std::endl;
+
+    std::vector<float> frequencies(block_size / 2);
+    for (int i = 0; i < block_size / 2; ++i) {
+        frequencies[i] = i * static_cast<float>(sample_rate) / block_size;
+    }
+    std::vector<float> fft_blocks(num_blocks * block_size / 2);
+
+    cl::Buffer data_buffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * data.size(), const_cast<float*>(data.data()));
+    cl::Buffer fft_buffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * fft_blocks.size());
+
+    cl::Kernel kernel(program, "fft");
+    kernel.setArg(0, data_buffer);
+    kernel.setArg(1, fft_buffer);
+    kernel.setArg(2, block_size);
+    kernel.setArg(3, offset);
+    kernel.setArg(4, num_blocks);
+
+    queue.enqueueNDRangeKernel(kernel, cl::NullRange, cl::NDRange(num_blocks), cl::NullRange);
+    queue.finish();
+    queue.enqueueReadBuffer(fft_buffer, CL_TRUE, 0, sizeof(float) * fft_blocks.size(), fft_blocks.data());
+
+    return {fft_blocks, frequencies};
+}
+
+// Function to print mean amplitudes
+void print_mean_amplitudes(const std::vector<float>& fft_blocks, const std::vector<float>& frequencies, float threshold) {
+    int block_size_half = fft_blocks.size() / frequencies.size();
+    std::vector<float> avg_magnitudes(frequencies.size(), 0.0f);
+
+    for (size_t i = 0; i < frequencies.size(); ++i) {
+        float sum = 0.0f;
+        for (int j = 0; j < block_size_half; ++j) {
+            sum += fft_blocks[i + j * frequencies.size()];
+        }
+        avg_magnitudes[i] = sum / block_size_half;
+    }
+
+    std::cout << "Frequencies with average amplitude above the threshold:\n";
+    for (size_t i = 0; i < frequencies.size(); ++i) {
+        if (avg_magnitudes[i] > threshold) {
+            std::cout << "Frequency: " << frequencies[i] << " Hz, Amplitude: " << avg_magnitudes[i] << "\n";
+        }
+    }
+}
+
+// Main function
 int main(int argc, char* argv[]) {
     if (argc != 5) {
         std::cerr << "Usage: " << argv[0] << " <file_path> <block_size> <step_width> <amplitude_threshold>" << std::endl;
         return 1;
     }
 
-    std::string filepath = argv[1];
+    std::string file_path = argv[1];
     int block_size = std::stoi(argv[2]);
-    int step_width = std::stoi(argv[3]);
-    double amplitude_threshold = std::stod(argv[4]);
+    int offset = std::stoi(argv[3]);
+    float threshold = std::stof(argv[4]);
+
+    if (!(64 <= block_size && block_size <= 512)) {
+        std::cerr << "Block size must be between 64 and 512" << std::endl;
+        return 1;
+    }
+    if (!(1 <= offset && offset <= block_size)) {
+        std::cerr << "Offset must be between 1 and block_size" << std::endl;
+        return 1;
+    }
+
+    auto [sample_rate, data] = read_wav_file(file_path);
+
+    std::vector<cl::Platform> platforms;
+    cl::Platform::get(&platforms);
+    cl::Platform platform = platforms.front();
+    cl_context_properties properties[] = { CL_CONTEXT_PLATFORM, (cl_context_properties)(platform)(), 0 };
+
+    cl::Context context(CL_DEVICE_TYPE_GPU, properties);
+    std::vector<cl::Device> devices = context.getInfo<CL_CONTEXT_DEVICES>();
+    cl::CommandQueue queue(context, devices[0]);
 
     auto start_time = std::chrono::high_resolution_clock::now();
-    analyze(filepath, block_size, step_width, amplitude_threshold);
+    auto [fft_blocks, frequencies] = perform_fft_gpu(context, queue, data, block_size, offset, sample_rate);
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+
+    print_mean_amplitudes(fft_blocks, frequencies, threshold);
 
     std::cout << "Processing time: " << duration << " ms" << std::endl;
 
