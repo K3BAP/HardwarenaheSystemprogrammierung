@@ -7,7 +7,9 @@ PANDOC = pandoc
 
 # Rule to convert markdown to pdf
 $(PDF_FILE): $(MD_FILE)
-	$(PANDOC) $(MD_FILE) -o $(PDF_FILE)
+	$(PANDOC) $(MD_FILE) -o temp.html
+	$(PANDOC) temp.html -o $(PDF_FILE)
+	rm -f temp.html
 
 # Clean up generated files
 clean:
