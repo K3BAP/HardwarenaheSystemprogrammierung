@@ -1,2 +1,5 @@
 nicht_zu_laut_abspielen.wav
 fourier_base
+fourier_threads
+fourier_opencl
+generate_wav
