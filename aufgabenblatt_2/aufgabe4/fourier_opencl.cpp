@@ -48,12 +48,15 @@ std::pair<std::vector<float>, std::vector<float>> perform_fft_gpu(cl::Context& c
     int num_blocks = (data.size() - block_size) / offset + 1;
     std::cout << "Block count: " << num_blocks << std::endl;
     std::cout << "Data size: " << data.size() << std::endl;
+    std::cout << "Expected return size: " << num_blocks * (block_size / 2) << std::endl;
+    std::cout << "Max vector size:      " << std::vector<float>().max_size() << std::endl;
+
 
     std::vector<float> frequencies(block_size / 2);
     for (int i = 0; i < block_size / 2; ++i) {
         frequencies[i] = i * static_cast<float>(sample_rate) / block_size;
     }
-    std::vector<float> fft_blocks(num_blocks * block_size / 2);
+    std::vector<float> fft_blocks(num_blocks * (block_size / 2));
 
     cl::Buffer data_buffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, sizeof(float) * data.size(), const_cast<float*>(data.data()));
     cl::Buffer fft_buffer(context, CL_MEM_WRITE_ONLY, sizeof(float) * fft_blocks.size());
