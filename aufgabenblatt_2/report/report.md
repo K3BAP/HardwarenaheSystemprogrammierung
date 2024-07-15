@@ -91,7 +91,7 @@ Ich habe die Laufzeit auf zwei verschiedenen Systemen getestet, hier folgen die 
     </tr>
     <tr>
         <td>CPU Kernanzahl</td>
-        <td>4</td>
+        <td>4 (4)</td>
     </tr>
     <tr>
         <td>CPU HyperThreading Support</td>
@@ -179,3 +179,137 @@ Leider kam es bei der Berechnung der Größe des Ausgabevektors zu einem buffer-
 </table>
 
 Es lässt sich erkennen, dass, während die über CPU parallelisierte Variante einen konstanten Speedup von etwa 3,5 erzielt, die OpenCL-Lösung auf diesem Rechner bei zu großen Datenmengen schnell an ihre Grenzen kommt. Durch die Beobachtung der VRAM-Auslastung gehe ich davon aus, dass dies an dem nur 4 GB großen Videospeicher der 1650 liegt. Um diese Theorie zu bestätigen, führe ich die Laufzeittests noch auf einem zweiten Testsystem durch.
+
+#### Testsystem 2
+<table>
+    <tr>
+        <th>Parameter</th>
+        <th>Wert</th>
+    </tr>
+    <tr>
+        <td>Betriebssystem</td>
+        <td>Linux Mint 21.3</td>
+    </tr>
+    <tr>
+        <td>Kernel Version</td>
+        <td>Linux 6.5.0-41-generic</td>
+    </tr>
+    <tr>
+        <td>CPU Modell</td>
+        <td>Intel Core i5-10400F</td>
+    </tr>
+    <tr>
+        <td>CPU Taktfrequenz</td>
+        <td>4.30 GHz</td>
+    </tr>
+    <tr>
+        <td>CPU Kernanzahl</td>
+        <td>6 (12)</td>
+    </tr>
+    <tr>
+        <td>CPU HyperThreading Support</td>
+        <td>Ja</td>
+    </tr>
+    <tr>
+        <td>GPU Modell</td>
+        <td>Intel Arc A770</td>
+    </tr>
+    <tr>
+        <td>Anzahl GPU-Cores</td>
+        <td>4096</td>
+    </tr>
+    <tr>
+        <td>GPU Clock</td>
+        <td>2400 MHz</td>
+    </tr>
+    <tr>
+        <td>GPU VRAM</td>
+        <td>16 GB</td>
+    </tr>
+</table>
+
+
+#### Laufzeiten Testsystem 2
+<table>
+    <tr>
+        <th>Programm</th>
+        <th>Laufzeit 512/2</th>
+        <th>Rel. Speedup</th>
+        <th>Laufzeit 512/4</th>
+        <th>Rel. Speedup</th>
+    </tr>
+    <tr>
+        <td>Base</td>
+        <td>367 s</td>
+        <td>1</td>
+        <td>190 s</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>Threads</td>
+        <td>56,8 s</td>
+        <td>6,46 (k = 6)</td>
+        <td>28,5 s</td>
+        <td>6,67 (k = 6)</td>
+    </tr>
+    <tr>
+        <td>OpenCL</td>
+        <td>Kein Ergebnis</td>
+        <td>Kein Ergebnis</td>
+        <td>Kein Ergebnis</td>
+        <td>Kein Ergebnis</td>
+    </tr>
+</table>
+<table>
+    <tr>
+        <th>Programm</th>
+        <th>Laufzeit 512/8</th>
+        <th>Rel. Speedup</th>
+    </tr>
+    <tr>
+        <td>Base</td>
+        <td>92 s</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>Threads</td>
+        <td>14,3 s</td>
+        <td>6,43 (k = 6)</td>
+    </tr>
+    <tr>
+        <td>OpenCL</td>
+        <td>2,29 s</td>
+        <td>40,17</td>
+    </tr>
+</table>
+
+Auch auf diesem System trat das Problem auf, dass die Laufzeit bei 512/4 ins Unermessliche stieg. Woran das genau liegt, kann ich aktuell nicht sagen, nur dass ein CPU-Kern zu 100% ausgelastet wird, während die GPU sich nach einem kurzen Startsprint langweilt. Jedenfalls funktioniert das Programm mit den Parametern 256/1 einwandfrei, obwohl die Gesamtdatenmenge dabei größer ist als bei 512/4. Um das Potenzial der OpenCL-Lösung zu zeigen, habe ich daher auf Testsystem 2 noch die Konfiguration 256/1 getestet.
+
+<table>
+    <tr>
+        <th>Programm</th>
+        <th>Laufzeit 256/1</th>
+        <th>Rel. Speedup</th>
+    </tr>
+    <tr>
+        <td>Base</td>
+        <td>332 s</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>Threads</td>
+        <td>53,0 s</td>
+        <td>6,26 (k = 6)</td>
+    </tr>
+    <tr>
+        <td>OpenCL</td>
+        <td>5,98 s</td>
+        <td>55,52</td>
+    </tr>
+</table>
+
+Diese letzte Reihe würde ich als die beste und aussagekräftigste bezeichnen. Hier sieht man sehr deutlich, dass OpenCL einen beträchtlichen Speed-Up bringen kann, wenn es korrekt eingesetzt wird. Dass der Speed-Up hier nicht 4096 beträgt, sollte klar sein, da die Shader-Einheiten der Grafikkarte bei weitem nicht so leistungsstark sind, wie ein CPU-Kern. Außerdem ist noch mit einem gewissen Overhead durch das Verwalten der vielen Threads zu rechnen.
+
+Auch zeigt das zweite Testsystem, dass Hyperthreading durchaus einen Vorteil bei hoch parallelisierten Anwendungen bringen kann: Bei Testsystem 2 wurde bei der Threading-Variante das Speed-Up-Ziel von 6 sogar übertroffen! Warum genau die OpenCL-Version bei den Konfigurationen 512/4 und 512/2 so kläglich scheiterte, kann ich mir auf Anhieb nicht erklären und die Antwort darauf ist wohl im Code zu suchen.
+
+Dennoch hat diese Versuchsreihe viele gute Erkenntnisse produziert, und ich bin mit dem Gesamtergebnis zufrieden.
