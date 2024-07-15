@@ -1,0 +1,124 @@
+\documentclass{beamer}
+
+\title{Projektvorstellung: Fourier-Transformation und Parallelisierung}
+\author{Fabian Sponholz}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\section{Einführung}
+\begin{frame}{Einführung}
+    \begin{itemize}
+        \item Ziel des Projekts: Implementierung und Analyse verschiedener Ansätze zur Fourier-Transformation
+        \item Vergleich von sequenzieller, multi-threaded und OpenCL-beschleunigter Implementierung
+    \end{itemize}
+\end{frame}
+
+\section{Lösung Aufgabe 3: Multi-Threading}
+\begin{frame}{Lösung Aufgabe 3: Multi-Threading}
+    \begin{itemize}
+        \item Parallelisierte Version des Cooley-Tukey FFT-Algorithmus mit C++ und Multi-Threading
+        \item Nutzung der Bibliotheken \texttt{thread} und \texttt{mutex}
+        \item Erheblicher Speed-Up festgestellt: $\sim 3.5 \times$ auf 4-Kern-CPU
+    \end{itemize}
+\end{frame}
+
+\section{Lösung Aufgabe 4: OpenCL}
+\begin{frame}{Lösung Aufgabe 4: OpenCL}
+    \begin{itemize}
+        \item Implementierung der Diskreten Fourier-Transformation (DFT) mit OpenCL
+        \item Herausforderungen und Lösungsansätze:
+        \begin{itemize}
+            \item Rekursion in OpenCL nicht möglich, Umstellung auf iterative DFT
+            \item Initiale Probleme mit komplexem Kernel und instabilen Ergebnissen
+            \item Vereinfachter Kernel brachte deterministische und plausible Ergebnisse
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\section{Experimentelle Tests}
+\begin{frame}{Experimentelle Tests}
+    \begin{itemize}
+        \item Testdateien: Stille, 420 Hz, Oktavensprung, Zufällige Frequenzen
+        \item Ergebnisse bei allen Implementierungen konsistent:
+        \begin{itemize}
+            \item Stille: Keine Frequenzen erkannt
+            \item 420 Hz: Genauigkeit der Frequenzerkennung
+            \item Oktavensprung: Erkennung beider Frequenzen
+            \item Zufällige Frequenzen: Erfolgreiche Erkennung mit angepassten Thresholds
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\section{Laufzeitanalyse und Vergleich}
+\begin{frame}{Laufzeitanalyse und Vergleich}
+    \begin{itemize}
+        \item Testsysteme:
+        \begin{itemize}
+            \item System 1: Intel i5-2500K, NVIDIA GTX 1650, 4 GB VRAM
+            \item System 2: Intel i5-10400F, Intel Arc A770, 16 GB VRAM
+        \end{itemize}
+        \item Laufzeitanalyse auf verschiedenen Parametern (Blockgröße, Schrittweite)
+    \end{itemize}
+\end{frame}
+
+\section{Laufzeiten Testsystem 1}
+\begin{frame}{Laufzeiten Testsystem 1}
+    \begin{table}[]
+        \centering
+        \begin{tabular}{|c|c|c|c|c|}
+            \hline
+            \textbf{Programm} & \textbf{512/2} & \textbf{Speedup} & \textbf{512/4} & \textbf{Speedup} \\ \hline
+            Base & 538 s & 1 & 274 s & 1 \\ \hline
+            Threads & 157 s & 3.43 & 77 s & 3.56 \\ \hline
+            OpenCL & n/a & n/a & 347 s & 0.79 \\ \hline
+        \end{tabular}
+    \end{table}
+    \begin{table}[]
+        \centering
+        \begin{tabular}{|c|c|c|}
+            \hline
+            \textbf{Programm} & \textbf{512/8} & \textbf{Speedup} \\ \hline
+            Base & 135 s & 1 \\ \hline
+            Threads & 38 s & 3.55 \\ \hline
+            OpenCL & 6.5 s & 20.77 \\ \hline
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\section{Laufzeiten Testsystem 2}
+\begin{frame}{Laufzeiten Testsystem 2}
+    \begin{table}[]
+        \centering
+        \begin{tabular}{|c|c|c|c|c|}
+            \hline
+            \textbf{Programm} & \textbf{512/2} & \textbf{Speedup} & \textbf{512/4} & \textbf{Speedup} \\ \hline
+            Base & 367 s & 1 & 190 s & 1 \\ \hline
+            Threads & 56.8 s & 6.46 & 28.5 s & 6.67 \\ \hline
+            OpenCL & n/a & n/a & n/a & n/a \\ \hline
+        \end{tabular}
+    \end{table}
+    \begin{table}[]
+        \centering
+        \begin{tabular}{|c|c|c|c|c|}
+            \hline
+            \textbf{Programm} & \textbf{512/8} & \textbf{Speedup} & \textbf{256/1} & \textbf{Speedup} \\ \hline
+            Base & 92 s & 1 & 332 s & 1 \\ \hline
+            Threads & 14.3 s & 6.43 & 53,0 s & 6,26 \\ \hline
+            OpenCL & 2.29 s & 40.17 & 5,98 & 55,52\\ \hline
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+\section{Zusammenfassung}
+\begin{frame}{Zusammenfassung}
+    \begin{itemize}
+        \item Multi-Threading bietet stabilen Speed-Up, abhängig von der Anzahl der CPU-Kerne
+        \item OpenCL zeigt großes Potenzial für Beschleunigung, limitiert durch VRAM und Implementierungsdetails
+        \item Weitere Optimierungsmöglichkeiten bei der OpenCL-Implementierung vorhanden
+    \end{itemize}
+\end{frame}
+
+\end{document}
