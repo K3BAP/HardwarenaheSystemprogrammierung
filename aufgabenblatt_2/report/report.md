@@ -118,28 +118,64 @@ Ich habe die Laufzeit auf zwei verschiedenen Systemen getestet, hier folgen die 
 
 Für die Laufzeitanalyse habe ich mich entschieden, die Datei `octave_100s.wav` aus den vorhergehenden Experimenten zu verwenden, da diese besonders klare Ergebnisse lieferte. Um die gewünschte Laufzeit von 5 - 10 Minuten zu erzielen, habe ich jedoch die Länge der Datei verdreifacht auf 300 sekunden. Die resultierende Datei ist `octave_300s.wav`. Zunächst experimentierte ich mit der sequenziellen Lösung herum, bis ich Parameter fand, die in dem gewünschten Laufzeitbereich zwischen 5 und 10 Minuten lagen. Mit den Parametern Block-Size = 512 und Step-Width = 2 kam ich mit der Sequentiellen Lösung so auf eine passende Laufzeit. 
 
-Leider sprengte die Anzahl der Blöcke in der OpenCL-Implementierung die maximale Größe von Vektoren, sodass ich das Programm mit diesen Parametern nicht ausführen konnte. Also musste ich den Code erneut verändern, um in diesem Fall die Daten über mehrere Vektoren zu verteilen und den OpenCL-Kernel mehrmals laufen zu lassen.
+Leider kam es bei der Berechnung der Größe des Ausgabevektors zu einem buffer-overflow Fehler, der zu einem Programmabsturz führte. Diesen konnte ich mit einem Cast und einer Klammerung der Rechnung beheben:
+
+<img src="./img/cast_sizet.png">
+
+ Auf der GTX 1650 reicht jedoch augenscheinlich der VRAM nicht aus, um die Fourier-Analyse mit den gegebenen Parametern durchzuführen, denn das Programm lieferte mit diesen Parametern keine Ergebnisse. Daher habe ich noch weitere Analysen mit anderen Parametern durchgeführt:
 
 #### Laufzeiten Testsystem 1
 <table>
     <tr>
         <th>Programm</th>
-        <th>Laufzeit</th>
+        <th>Laufzeit 512/2</th>
+        <th>Rel. Speedup</th>
+        <th>Laufzeit 512/4</th>
         <th>Rel. Speedup</th>
     </tr>
     <tr>
         <td>Base</td>
         <td>538 s</td>
         <td>1</td>
+        <td>274 s</td>
+        <td>1</td>
     </tr>
     <tr>
         <td>Threads</td>
         <td>157 s</td>
         <td>3,43 (k = 4)</td>
+        <td>77 s</td>
+        <td>3,56 (k = 4)</td>
     </tr>
     <tr>
         <td>OpenCL</td>
-        <td></td>
-        <td></td>
+        <td>Kein Ergebnis</td>
+        <td>Kein Ergebnis</td>
+        <td>347 s</td>
+        <td>0,79</td>
     </tr>
 </table>
+<table>
+    <tr>
+        <th>Programm</th>
+        <th>Laufzeit 512/8</th>
+        <th>Rel. Speedup</th>
+    </tr>
+    <tr>
+        <td>Base</td>
+        <td>135 s</td>
+        <td>1</td>
+    </tr>
+    <tr>
+        <td>Threads</td>
+        <td>38 s</td>
+        <td>3,55 (k = 4)</td>
+    </tr>
+    <tr>
+        <td>OpenCL</td>
+        <td>6,5 s</td>
+        <td>20,77</td>
+    </tr>
+</table>
+
+Es lässt sich erkennen, dass, während die über CPU parallelisierte Variante einen konstanten Speedup von etwa 3,5 erzielt, die OpenCL-Lösung auf diesem Rechner bei zu großen Datenmengen schnell an ihre Grenzen kommt. Durch die Beobachtung der VRAM-Auslastung gehe ich davon aus, dass dies an dem nur 4 GB großen Videospeicher der 1650 liegt. Um diese Theorie zu bestätigen, führe ich die Laufzeittests noch auf einem zweiten Testsystem durch.
