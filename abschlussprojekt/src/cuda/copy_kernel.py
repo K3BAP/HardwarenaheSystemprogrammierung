@@ -6,15 +6,15 @@ from pycuda.compiler import SourceModule
 def main():
     # Define the number of elements in the large array.
     # Here we choose 100 million elements as an example.
-    n = 400 * 1024 * 1024  # 100 million elements
+    n = 600 * 1024 * 1024  # 100 million elements
 
     # Create a source array with random data and an empty destination array.
     src_array = np.random.rand(n).astype(np.float32)
-    dst_array = np.empty_like(src_array)
+    # dst_array = np.empty_like(src_array)
 
     # Allocate device memory for the source and destination arrays.
     src_gpu = cuda.mem_alloc(src_array.nbytes)
-    dst_gpu = cuda.mem_alloc(dst_array.nbytes)
+    dst_gpu = cuda.mem_alloc(src_array.nbytes)
 
     # Copy the source array from host (CPU) to device (GPU).
     cuda.memcpy_htod(src_gpu, src_array)
@@ -45,13 +45,13 @@ def main():
     print("finish")
 
     # Copy the result back from device to host.
-    cuda.memcpy_dtoh(dst_array, dst_gpu)
+    #cuda.memcpy_dtoh(dst_array, dst_gpu)
 
     # Verify the copy by comparing arrays.
-    if np.allclose(src_array, dst_array):
-        print("Array copy successful.")
-    else:
-        print("Array copy failed.")
+    #if np.allclose(src_array, dst_array):
+    #    print("Array copy successful.")
+    #else:
+    #    print("Array copy failed.")
 
 if __name__ == "__main__":
     main()

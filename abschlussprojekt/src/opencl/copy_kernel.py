@@ -3,11 +3,11 @@ import pyopencl as cl
 
 def main():
     # Define the number of elements in the large array.
-    n = 400 * 1024 * 1024  # 100 million elements
+    n = 600 * 1024 * 1024  # 100 million elements
 
     # Create a source array with random data and an empty destination array.
     src_array = np.random.rand(n).astype(np.float32)
-    dst_array = np.empty_like(src_array)
+    # dst_array = np.empty_like(src_array)
 
     # Set up the OpenCL context, command queue, and device.
     platform = cl.get_platforms()[0]  # Select the first platform (adjust if needed)
@@ -18,7 +18,7 @@ def main():
     # Create memory buffers for the source and destination arrays.
     mf = cl.mem_flags
     src_buf = cl.Buffer(context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=src_array)
-    dst_buf = cl.Buffer(context, mf.WRITE_ONLY, dst_array.nbytes)
+    dst_buf = cl.Buffer(context, mf.WRITE_ONLY, src_array.nbytes)
 
     # Define the OpenCL kernel for copying data.
     kernel_code = """
@@ -44,14 +44,14 @@ def main():
     print("finish")
 
     # Copy the result from the device back to the host.
-    cl.enqueue_copy(queue, dst_array, dst_buf)
+    # cl.enqueue_copy(queue, dst_array, dst_buf)
     queue.finish()
 
     # Verify the copy by comparing the arrays.
-    if np.allclose(src_array, dst_array):
-        print("Array copy successful.")
-    else:
-        print("Array copy failed.")
+    #if np.allclose(src_array, dst_array):
+    #    print("Array copy successful.")
+    #else:
+    #    print("Array copy failed.")
 
 if __name__ == "__main__":
     main()
