@@ -1,0 +1,101 @@
+% !TeX spellcheck = de_DE
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage{svg}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{amsmath,amsthm,amsfonts,amssymb,amscd}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage[skip=3pt]{parskip}
+\usepackage[ngerman]{babel}
+\pagestyle{empty}
+\titleformat*{\section}{\large\bfseries}
+\titleformat*{\subsection}{\bfseries}
+
+%
+\geometry{
+	a4paper,
+	total={170mm,240mm},
+	left=20mm,
+	top=30mm,
+}
+
+\date{}
+%Bitte ausfüllen
+\newcommand\course{Heterogenious Computing}
+\newcommand\hwnumber{\large Abschlussprojekt}
+\newcommand\Name{Fabian Sponholz}
+\newcommand\Neptun{1561546}
+
+%Matheinheiten
+\newcommand\m{\:\textrm{m}}
+\newcommand\M{\:\Big[\textrm{m}\Big]}
+\newcommand\mm{\:\textrm{mm}}
+\newcommand\MM{\:\Big[\textrm{mm}\Big]}
+\newcommand\un{\underline}
+\newcommand\s{\:\textrm{s}}
+\newcommand\bS{\:\Big[\textrm{S}\Big]}
+\newcommand\ms{\:\frac{\textrm{m}}{\textrm{s}}}
+\newcommand\MS{\:\Big[\frac{\textrm{m}}{\textrm{s}}\Big]}
+\newcommand\mss{\:\frac{\textrm{m}}{\textrm{s}^2}}
+\newcommand\MSS{\:\Big[\frac{\textrm{m}}{\textrm{s}^2}\Big]}
+
+%Trennlinie
+\newcommand\separator{\rule{\linewidth}{0.5pt}}
+
+%Bitte nicht einstellen
+\renewcommand{\figurename}{Abbildung}
+\renewcommand{\tablename}{Tabelle}
+\pagestyle{fancyplain}
+\headheight 35pt
+\lhead{\Name\\\Neptun}
+\chead{\textbf{ \hwnumber}}
+\rhead{\course \\ \today}
+\lfoot{}
+\cfoot{}
+\rfoot{\small\thepage}
+\headsep 1.5em
+
+\begin{document}
+	\section*{Einleitung}
+	In der Vorlesung \emph{Heterogenious Computing} haben wir uns auch mit dem Programmieren von Grafikkarten befasst und dort verschiedene Schnittstellen kennengelernt, die es ermöglichen, Code direkt auf solcher Hardware auszuführen.
+	Insbesondere gut parallelisierbare Aufgaben lassen sich so erheblich beschleunigen im Vergleich zur Ausführung auf einer CPU.
+	Zunächst wäre da einmal \emph{OpenCL} zu nennen, welches eine offene Schnittstelle für verschiedenste Geräte wie FPGAs, CPUs und GPUs darstellt.
+	Zusätzlich gibt es bei GPUs noch herstellereigene Schnittstellen wie z.B. \emph{Nvidia CUDA} oder \emph{Intel oneAPI}, die grundsätzlich ähnliche Funktionalitäten bieten.
+	
+	Für mein Abschlussprojekt stelle ich mir die Frage, ob die Verwendung von herstellerspezifischen APIs im Vergleich zu OpenCL einen signifikanten Performance-Vorteil bringt.
+	Dazu möchte ich je einen rechenintensiven Algorithmus zur Messung der Rechenleistung und einen speicherintensiven Algorithmus zur Messung der Speicherbandbreite implementieren.
+	Diese Algorithmen werde ich für verschiedene Schnittstellen anpassen und so die Performance (Laufzeit) vergleichen.
+	
+	\subsection*{Gewählte Algorithmen}
+	Folgende Algorithmen habe ich für das Experiment ausgewählt:
+	
+	\begin{itemize}
+		\item \textbf{Matrix-Multiplikation} ist eine einfache aber rechenintensive Operation, die sich leicht parallelisieren lässt. Durch die Größe der Matrizen lässt sich außerdem die Arbeitslast gut skalieren.
+		\item \textbf{Kopieren von Arrays} ist eine Operation, die wenig Rechenleistung benötigt, aber die Speicherbandbreite stark auslastet. Zudem lässt sich hier die Arbeitslast ebenfalls gut durch die Größe des Arrays skalieren.
+	\end{itemize}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+\end{document}
