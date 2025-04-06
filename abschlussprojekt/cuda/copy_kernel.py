@@ -37,9 +37,12 @@ def main():
     block_size = 256
     grid_size = (n + block_size - 1) // block_size
 
+    print("start")
     # Launch the kernel.
     copy_kernel(src_gpu, dst_gpu, np.int32(n),
                 block=(block_size, 1, 1), grid=(grid_size, 1))
+    cuda.Context.synchronize()
+    print("finish")
 
     # Copy the result back from device to host.
     cuda.memcpy_dtoh(dst_array, dst_gpu)

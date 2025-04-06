@@ -49,10 +49,13 @@ def main():
     grid_size = ((N + block_size[0] - 1) // block_size[0],
                  (M + block_size[1] - 1) // block_size[1])
 
+    print("start")
     # Launch the kernel
     mat_mul(np.int32(M), np.int32(N), np.int32(K),
             A_gpu, B_gpu, C_gpu,
             block=block_size, grid=grid_size)
+    cuda.Context.synchronize()
+    print("finish")
 
     # Copy the result from device to host
     cuda.memcpy_dtoh(C, C_gpu)

@@ -38,8 +38,10 @@ def main():
     # Set the global work size to cover all elements.
     global_work_size = (n,)
 
+    print("start")
     # Execute the kernel.
-    program.copy_kernel(queue, global_work_size, None, src_buf, dst_buf, np.int32(n))
+    program.copy_kernel(queue, global_work_size, None, src_buf, dst_buf, np.int32(n)).wait()
+    print("finish")
 
     # Copy the result from the device back to the host.
     cl.enqueue_copy(queue, dst_array, dst_buf)

@@ -50,10 +50,12 @@ def main():
     # Define the global work size (each work-item computes one element in C)
     global_work_size = (M, N)
 
+    print("start")
     # Execute the kernel
     program.mat_mul(queue, global_work_size, None,
                     np.int32(M), np.int32(N), np.int32(K),
-                    A_buf, B_buf, C_buf)
+                    A_buf, B_buf, C_buf).wait()
+    print("finish")
 
     # Copy the result from the device back to the host
     cl.enqueue_copy(queue, C, C_buf)
