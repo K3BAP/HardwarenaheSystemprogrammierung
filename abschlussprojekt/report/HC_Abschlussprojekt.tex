@@ -132,8 +132,84 @@
 		\bottomrule
 	\end{tabular}
 	
+	\section*{Auswertung Testsystem 1}
+	Für die Zeitmessung habe ich die Python-Funktion \texttt{time.perf\_counter\_ns()} verwendet, um eine Zeitmessung in Nanosekunden vorzunehmen.
+	Die erhaltenen Werte habe ich dann in eine Liste geschrieben, die ich dann in R weiter auswerten konnte.
+	Im Folgenden lege ich die Ergebnisse der Zeitmessungen für den Vergleich zwischen OpenCL und CUDA auf Testsystem 1 dar.
+	
+	\subsection*{Ergebnisse: Matrix-Multiplikation}
+	\subsubsection*{OpenCL}
+	\includegraphics[width=0.5\textwidth]{../statistics/nvidia/opencl/histogram_matmul.png}
+	\includegraphics[width=0.5\textwidth]{../statistics/nvidia/opencl/boxplot_matmul.png}
+	\\
+	\begin{center}
+		\begin{tabular}{|l|l|}
+		\toprule
+		\textbf{Mittlere Laufzeit} 		& $84.27s$ \\
+		\textbf{1. Quartil}				& $81.70s$ \\
+		\textbf{Median}					& $81.79s$  \\
+		\textbf{3. Quartil}				& $82.49s$  \\
+		\bottomrule
+		\end{tabular}
+	\end{center}
+	
+	\subsubsection*{CUDA}
+	\includegraphics[width=0.5\textwidth]{../statistics/nvidia/cuda/histogram_matmul.png}
+	\includegraphics[width=0.5\textwidth]{../statistics/nvidia/cuda/boxplot_matmul.png}
+	\\
+	\begin{center}
+		\begin{tabular}{|l|l|}
+			\toprule
+			\textbf{Mittlere Laufzeit} 		& $7.00s$ \\
+			\textbf{1. Quartil}				& $6.98s$ \\
+			\textbf{Median}					& $6.99s$  \\
+			\textbf{3. Quartil}				& $6.99s$  \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\medskip
+	
+	Dieses Ergebnis hat mich wirklich erstaunt. 
+	Die Laufzeit mit CUDA ist hier, obwohl der Algorithmus der selbe ist und sich die Kernel-Codes entsprechend sehr ähnlich sehen, um eine Zehnerpotenz schneller als mit OpenCL!
+	Außerdem sieht man, dass die Laufzeiten von Durchlauf zu Durchlauf recht ähnlich sind und es nur wenige Ausreißer nach oben gibt.
+	
+	Ich habe auch die Leistungsdaten der Grafikkarte während der Tests beobachtet, wobei ich auch gesehen habe, dass die Leistungsaufnahme während dem Durchlauf der CUDA-Implementierung etwa 20\% höher war als bei der OpenCL-Variante.
 	
 	
+
+	\subsection*{Ergebnisse: Copy Kernel}
+	\subsubsection*{OpenCL}
+	\includegraphics[width=0.5\textwidth]{../statistics/nvidia/opencl/histogram_copy.png}
+	\includegraphics[width=0.5\textwidth]{../statistics/nvidia/opencl/boxplot_copy.png}
+	\\
+	\begin{center}
+		\begin{tabular}{|l|l|}
+			\toprule
+			\textbf{Mittlere Laufzeit} 		& $17.02ms$ \\
+			\textbf{1. Quartil}				& $16.67ms$ \\
+			\textbf{Median}					& $17.02ms$  \\
+			\textbf{3. Quartil}				& $17.39ms$  \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	
+	\subsubsection*{CUDA}
+	\includegraphics[width=0.5\textwidth]{../statistics/nvidia/cuda/histogram_copy.png}
+	\includegraphics[width=0.5\textwidth]{../statistics/nvidia/cuda/boxplot_copy.png}
+	\\
+	\begin{center}
+		\begin{tabular}{|l|l|}
+			\toprule
+			\textbf{Mittlere Laufzeit} 		& $16.93ms$ \\
+			\textbf{1. Quartil}				& $16.69ms$ \\
+			\textbf{Median}					& $16.89ms$  \\
+			\textbf{3. Quartil}				& $17.18ms$  \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\medskip
+	Auch hier zeigt sich eine sehr kleine Abweichung zugunsten von CUDA, jedoch ist diese so gering, dass ich sie für irrelevant halte.
+	Außerdem wird hier im Histogramm annähernd eine Normalverteilung ersichtlich, während diese im ersten Versuch aufgrund der starken Ausreißer nicht erkennbar ist.
 	
 	
 	
