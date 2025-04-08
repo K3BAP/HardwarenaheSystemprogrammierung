@@ -1,7 +1,8 @@
 import numpy as np
 import pyopencl as cl
+import time
 
-def main():
+def main(iterations):
     # Set dimensions for matrices (e.g., 1024x1024 for large-scale multiplication)
     M = 10000  # Number of rows in matrix A and C
     K = 10000  # Number of columns in matrix A and rows in matrix B
@@ -50,20 +51,39 @@ def main():
     # Define the global work size (each work-item computes one element in C)
     global_work_size = (M, N)
 
-    print("start")
-    # Execute the kernel
-    program.mat_mul(queue, global_work_size, None,
-                    np.int32(M), np.int32(N), np.int32(K),
-                    A_buf, B_buf, C_buf).wait()
-    print("finish")
+    # Copy data to device synchronously
+    cl.enqueue_copy(queue, A_buf, A)
+    cl.enqueue_copy(queue, B_buf, B)
+    queue.flush()
 
-    # Copy the result from the device back to the host
-    cl.enqueue_copy(queue, C, C_buf)
+    # Start the benchmark
+    for i in range(iterations):
+        print(f"start {i}/{iterations}")
+        start_time = time.perf_counter_ns()
+        # Execute the kernel
+        program.mat_mul(queue, global_work_size, None,
+                        np.int32(M), np.int32(N), np.int32(K),
+                        A_buf, B_buf, C_buf).wait()
+        end_time = time.perf_counter_ns()
+        print("finish")
+
+        runtime = end_time - start_time
+
+        # Open the file in append mode and write the runtime as a new line
+        with open('runtime_log_matmul.txt', 'a') as file:
+            file.write(f"{runtime}\n")
+
+        print(f"Runtime: {runtime} nanoseconds")
+
+        # Copy the result from the device back to the host
+        cl.enqueue_copy(queue, C, C_buf)
+        queue.flush()
+
+        # Print a small part of the result for verification
+        print("Matrix multiplication completed. Result matrix C has shape:", C.shape)
+        print("First element C[0, 0] =", C[0, 0])
+
     queue.finish()
 
-    # Print a small part of the result for verification
-    print("Matrix multiplication completed. Result matrix C has shape:", C.shape)
-    print("First element C[0, 0] =", C[0, 0])
-
 if __name__ == "__main__":
-    main()
+    main(100)
