@@ -2,8 +2,9 @@ import numpy as np
 import pycuda.driver as cuda
 import pycuda.autoinit  # Automatically initializes CUDA driver
 from pycuda.compiler import SourceModule
+import time
 
-def main():
+def main(iterations):
     # Matrix dimensions
     M = 10000  # Number of rows in A and C
     K = 10000  # Number of columns in A and rows in B
@@ -49,20 +50,31 @@ def main():
     grid_size = ((N + block_size[0] - 1) // block_size[0],
                  (M + block_size[1] - 1) // block_size[1])
 
-    print("start")
-    # Launch the kernel
-    mat_mul(np.int32(M), np.int32(N), np.int32(K),
-            A_gpu, B_gpu, C_gpu,
-            block=block_size, grid=grid_size)
-    cuda.Context.synchronize()
-    print("finish")
+    for i in range(iterations):
+        print(f"start {i}/{iterations}")
+        start_time = time.perf_counter_ns()
+        # Launch the kernel
+        mat_mul(np.int32(M), np.int32(N), np.int32(K),
+                A_gpu, B_gpu, C_gpu,
+                block=block_size, grid=grid_size)
+        cuda.Context.synchronize()
+        end_time = time.perf_counter_ns()
+        print("finish")
 
-    # Copy the result from device to host
-    cuda.memcpy_dtoh(C, C_gpu)
+        runtime = end_time - start_time
 
-    # Print a small part of the result for verification
-    print("Matrix multiplication completed. Result matrix C has shape:", C.shape)
-    print("First element C[0, 0] =", C[0, 0])
+        # Open the file in append mode and write the runtime as a new line
+        with open('runtime_log_matmul.txt', 'a') as file:
+            file.write(f"{runtime}\n")
+
+        print(f"Runtime: {runtime} nanoseconds")
+
+        # Copy the result from device to host
+        cuda.memcpy_dtoh(C, C_gpu)
+
+        # Print a small part of the result for verification
+        print("Matrix multiplication completed. Result matrix C has shape:", C.shape)
+        print("First element C[0, 0] =", C[0, 0])
 
 if __name__ == "__main__":
-    main()
+    main(100)

@@ -2,8 +2,9 @@ import numpy as np
 import pycuda.driver as cuda
 import pycuda.autoinit  # Initializes CUDA automatically
 from pycuda.compiler import SourceModule
+import time
 
-def main():
+def main(iterations):
     # Define the number of elements in the large array.
     # Here we choose 100 million elements as an example.
     n = 500 * 1024 * 1024  # 100 million elements
@@ -37,12 +38,23 @@ def main():
     block_size = 256
     grid_size = (n + block_size - 1) // block_size
 
-    print("start")
-    # Launch the kernel.
-    copy_kernel(src_gpu, dst_gpu, np.int32(n),
-                block=(block_size, 1, 1), grid=(grid_size, 1))
-    cuda.Context.synchronize()
-    print("finish")
+    for i in range(iterations):
+        print("start")
+        start_time = time.perf_counter_ns()
+        # Launch the kernel.
+        copy_kernel(src_gpu, dst_gpu, np.int32(n),
+                    block=(block_size, 1, 1), grid=(grid_size, 1))
+        cuda.Context.synchronize()
+        end_time = time.perf_counter_ns()
+        print("finish")
+
+        runtime = end_time - start_time
+
+        # Open the file in append mode and write the runtime as a new line
+        with open('runtime_log_copy.txt', 'a') as file:
+            file.write(f"{runtime}\n")
+
+        print(f"Runtime: {runtime} nanoseconds")
 
     # Copy the result back from device to host.
     #cuda.memcpy_dtoh(dst_array, dst_gpu)
@@ -54,4 +66,4 @@ def main():
     #    print("Array copy failed.")
 
 if __name__ == "__main__":
-    main()
+    main(1000)
