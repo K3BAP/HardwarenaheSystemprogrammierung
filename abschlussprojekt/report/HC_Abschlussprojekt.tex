@@ -10,6 +10,7 @@
 \usepackage{titlesec}
 \usepackage{hyperref}
 \usepackage{listings}
+\usepackage{booktabs}
 \usepackage[skip=3pt]{parskip}
 \usepackage[ngerman]{babel}
 \pagestyle{empty}
@@ -79,14 +80,57 @@
 		\item \textbf{Kopieren von Arrays} ist eine Operation, die wenig Rechenleistung benötigt, aber die Speicherbandbreite stark auslastet. Zudem lässt sich hier die Arbeitslast ebenfalls gut durch die Größe des Arrays skalieren.
 	\end{itemize}
 	
+	\section*{Implementierungsdetails}
+	\subsection*{Generelles}
+	Die oben genannten APIs verwenden sogenannte Command-Queues, um unter anderem Kopier-Operationen asynchron zu verarbeiten.
+	Da ich nur die Laufzeit des tatsächlichen Kernel-Pro-gramms messen möchte und die Zeit, die das Kopieren vom/zum Host ausgespart werden soll, ist es wichtig sicherzustellen, dass diese Operationen vor Beginn der Zeitmessung abgeschlossen sind.
+	Glücklicherweise gibt es dafür passende Funktionen, wie z.B. \texttt{queue.flush()} bei OpenCL oder eine synchrone Kopier-Methode \texttt{Driver.memcpy\_htod} bei CUDA.
+	Auch die eigentliche Ausführung der Kernels findet normalerweise asynchron statt, hier kann bei OpenCL zur Synchronisierung eine \texttt{wait()}-Methode aufgerufen werden, bei CUDA kann der selbe Effekt durch einen Aufruf von \texttt{Context.synchronize()} erzielt werden.
 	
+	\subsection*{Matrix-Multiplikation}
+	Hier werden als Eingabe zwei zufällig generierte 10000x10000-Matrizen verwendet, die dann naiv multipliziert werden. Hier berechnet jede Arbeitseinheit auf der GPU ein Feld der resultierenden Matrix.
+	Da hier das Kopieren der Daten nur einen winzigen Bruchteil der Laufzeit ausmacht, wird das Ergebnis zurückgeschrieben und teilweise ausgegeben.
+	Die Laufzeitmessung beschränkt sich allerdings trotzdem nur auf die eigentliche Berechnung.
 	
+	Das Programm wird 100 mal iteriert, wobei hier jedes mal die selben Operanden verwendet werden: Zu Beginn werden die Eingabematrizen erstellt und auf die GPU kopiert, dann wird die Berechnung 100 mal wiederholt.
 	
+	\subsection*{Copy-Kernel}
+	Als Eingabe wird hier ein Array von 32-Bit Floats verwendet, wobei jede Arbeitseinheit je eine der Zahlen in ein gleich großes Ausgabearray kopiert.
+	Die Größe des Arrays wird an den verfügbaren GPU-Speicher angepasst, um diesen optimal auszunutzen.
+	Hier ist es besonders wichtig, die Kopiervorgänge zur GPU nicht in die Zeitmessung mit aufzunehmen, da diese deutlich länger dauern als die Kernelausführung.
 	
+	\section*{Testsysteme}
+	Hier kurz die technischen Daten der Grafikkarten, die ich in meinem Test verwendet habe:
 	
+	\subsection*{Testsystem 1: NVIDIA}
+	\begin{tabular}{@{}ll@{}}
+		\toprule
+		\textbf{Eigenschaft}             & \textbf{Wert}                      \\ \midrule
+		\textbf{Bezeichnung}			& NVidia GeForce RTX 2060			\\
+		\textbf{GPU-Kerne (CUDA Cores)} & 1920                               \\
+		\textbf{Basistakt}              & 1365 MHz                           \\
+		\textbf{Boost-Takt}             & 1680 MHz                           \\
+		\textbf{Speichergröße}          & 6 GB GDDR6                         \\
+		\textbf{Speicherinterface}      & 192 Bit                            \\
+		\textbf{Speicherbandbreite}     & 336 GB/s                           \\
+		\textbf{Speichertakt}           & 14 Gbps (effektiv)                 \\
+		\bottomrule
+	\end{tabular}
 	
-	
-	
+	\subsection*{Testsystem 2: Intel}
+	\begin{tabular}{@{}ll@{}}
+		\toprule
+		\textbf{Eigenschaft}             & \textbf{Wert}                         \\ \midrule
+		\textbf{Bezeichnung}		     & Intel Arc A770 (Limited Edition)		\\
+		\textbf{GPU-Kerne (Shader)}      & 4096                                   \\
+		\textbf{Basistakt}               & 2100 MHz                              \\
+		\textbf{Boost-Takt}              & Bis zu 2400 MHz                       \\
+		\textbf{Speichergröße}           & 16 GB GDDR6                           \\
+		\textbf{Speicherinterface}       & 256 Bit                               \\
+		\textbf{Speicherbandbreite}      & 560 GB/s                              \\
+		\textbf{Speichertakt}            & 17.5 Gbps (effektiv)                  \\
+		\bottomrule
+	\end{tabular}
 	
 	
 	
