@@ -1,7 +1,8 @@
 import numpy as np
 import pyopencl as cl
+import time
 
-def main():
+def main(iterations):
     # Define the number of elements in the large array.
     n = 500 * 1024 * 1024  # 100 million elements
 
@@ -41,11 +42,22 @@ def main():
     # Wait until buffer is copied to device
     cl.enqueue_copy(queue, src_buf, src_array)
     queue.flush()
+    
+    # Run the benchmark
+    for i in range(iterations):
+        start_time = time.perf_counter_ns()
+        # Execute the kernel.
+        program.copy_kernel(queue, global_work_size, None, src_buf, dst_buf, np.int32(n)).wait()
+        end_time = time.perf_counter_ns()
 
-    print("start")
-    # Execute the kernel.
-    program.copy_kernel(queue, global_work_size, None, src_buf, dst_buf, np.int32(n)).wait()
-    print("finish")
+        runtime = end_time - start_time
+
+        # Open the file in append mode and write the runtime as a new line
+        with open('runtime_log_copy.txt', 'a') as file:
+            file.write(f"{runtime}\n")
+
+        print(f"Runtime: {runtime} nanoseconds")
+
 
     # Copy the result from the device back to the host.
     # cl.enqueue_copy(queue, dst_array, dst_buf)
@@ -58,4 +70,4 @@ def main():
     #    print("Array copy failed.")
 
 if __name__ == "__main__":
-    main()
+    main(1000)
