@@ -37,6 +37,10 @@ def main():
 
     # Set the global work size to cover all elements.
     global_work_size = (n,)
+    
+    # Wait until buffer is copied to device
+    cl.enqueue_copy(queue, src_buf, src_array)
+    queue.flush()
 
     print("start")
     # Execute the kernel.
