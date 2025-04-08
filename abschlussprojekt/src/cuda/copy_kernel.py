@@ -6,7 +6,7 @@ from pycuda.compiler import SourceModule
 def main():
     # Define the number of elements in the large array.
     # Here we choose 100 million elements as an example.
-    n = 600 * 1024 * 1024  # 100 million elements
+    n = 500 * 1024 * 1024  # 100 million elements
 
     # Create a source array with random data and an empty destination array.
     src_array = np.random.rand(n).astype(np.float32)
