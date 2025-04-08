@@ -113,7 +113,7 @@
 		\textbf{Speichergröße}          & 6 GB GDDR6                         \\
 		\textbf{Speicherinterface}      & 192 Bit                            \\
 		\textbf{Speicherbandbreite}     & 336 GB/s                           \\
-		\textbf{Speichertakt}           & 14 Gbps (effektiv)                 \\
+		\textbf{Speichertakt}           & 1750 MHz (14 Gbps effektiv)        \\
 		\bottomrule
 	\end{tabular}
 	
@@ -124,11 +124,11 @@
 		\textbf{Bezeichnung}		     & Intel Arc A770 (Limited Edition)		\\
 		\textbf{GPU-Kerne (Shader)}      & 4096                                   \\
 		\textbf{Basistakt}               & 2100 MHz                              \\
-		\textbf{Boost-Takt}              & Bis zu 2400 MHz                       \\
+		\textbf{Boost-Takt}              & 2400 MHz                       		\\
 		\textbf{Speichergröße}           & 16 GB GDDR6                           \\
 		\textbf{Speicherinterface}       & 256 Bit                               \\
 		\textbf{Speicherbandbreite}      & 560 GB/s                              \\
-		\textbf{Speichertakt}            & 17.5 Gbps (effektiv)                  \\
+		\textbf{Speichertakt}            & 2000 MHz (16 Gbps effektiv)            \\
 		\bottomrule
 	\end{tabular}
 	
@@ -211,11 +211,98 @@
 	Auch hier zeigt sich eine sehr kleine Abweichung zugunsten von CUDA, jedoch ist diese so gering, dass ich sie für irrelevant halte.
 	Außerdem wird hier im Histogramm annähernd eine Normalverteilung ersichtlich, während diese im ersten Versuch aufgrund der starken Ausreißer nicht erkennbar ist.
 	
+	\section*{Auswertung Testsystem 2}
+	Für die OpenCL-Tests habe ich hier den selben Python-Code verwendet wie bereits bei Testsystem 1, um auch einen Vergleich zwischen den beiden Systemen zu ermöglichen.
+	Auch die Dimensionen der Eingabedaten habe ich gleich gelassen.
 	
+	Leider habe ich es nicht geschafft, die Python-Schnittstelle von oneAPI zum Laufen zu bringen, daher habe ich für die oneAPI-Tests stattdessen äquivalente Programme in C++ erstellt.
+	Da der eigentliche Code sowieso nicht in Python ausgeführt wird, sollte der Einfluss auf die Ergebnisse nicht relevant sein.
+	Für die Laufzeitmessung habe ich das eingebaute Profiling-Tool von oneAPI verwendet, da dies hier die beste Möglichkeit ist, die reine Kernel-Laufzeit zu messen.
 	
+	\subsection*{Ergebnisse: Matrix-Multiplikation}
+	\subsubsection*{OpenCL}
+	\includegraphics[width=0.5\textwidth]{../statistics/intel/opencl/histogram_matmul.png}
+	\includegraphics[width=0.5\textwidth]{../statistics/intel/opencl/boxplot_matmul.png}
+	\\
+	\begin{center}
+		\begin{tabular}{|l|l|}
+			\toprule
+			\textbf{Mittlere Laufzeit} 		& $6.61s$ \\
+			\textbf{1. Quartil}				& $6.61s$ \\
+			\textbf{Median}					& $6.61s$  \\
+			\textbf{3. Quartil}				& $6.61s$  \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
 	
+	\subsubsection*{oneAPI}
+	\includegraphics[width=0.5\textwidth]{../statistics/intel/oneapi/histogram_matmul.png}
+	\includegraphics[width=0.5\textwidth]{../statistics/intel/oneapi/boxplot_matmul.png}
+	\\
+	\begin{center}
+		\begin{tabular}{|l|l|}
+			\toprule
+			\textbf{Mittlere Laufzeit} 		& $2.95s$ \\
+			\textbf{1. Quartil}				& $2.94s$ \\
+			\textbf{Median}					& $2.95s$  \\
+			\textbf{3. Quartil}				& $2.95s$  \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\medskip
 	
+	Ebenso wie bei Testsystem 1 zeigt sich hier ein signifikanter Performance-Unterschied zwischen OpenCL und der herstellereigenen Schnittstelle.
+	Zwar ist der Speedup hier mit \glqq nur\grqq{} etwa zwei deutlich geringer als beim Testsystem 1, jedoch ist das immer noch ein erheblich besseres Ergebnis.
+	Welchen Einfluss die Verwendung von Intels Profiling-Tool anstelle einer Host-Basierten Zeitmessung hat, lässt sich so erstmal nicht herausfinden; Der Unterschied sollte allerdings so gering sein, dass er das Ergebnis in seiner Aussagekraft nicht weiter verändern würde.
 	
+	Interessant ist auch, dass Ausreißer viel seltener sind und außerdem in erster Linie ein einziger Ausreißer zu Beginn des Testlaufs heraussticht.
+	Dies deutet auf eine gewisse Initialisierungsphase hin, die die Intel-Grafikkarte sowohl bei Verwendung von OpenCL als auch bei oneAPI durchzuführen scheint.
+	Grundsätzlich sind die einzelnen Datenpunkte aber viel weniger gestreut als bei Testsystem 1.
 	
+	Zuletzt fällt noch auf, dass die Performance von Testsystem 1 mit CUDA und Testsystem 2 mit OpenCL bei der Matrix-Multiplikation fast auf Augenhöhe ist.
+	Da die Grafikkarte von Testsystem 2 in der Theorie bedeutend stärker ist als die von Testsystem 1, ist das höchst interessant und unterstreicht die höhere Effizienz von CUDA im Vergleich zu OpenCL.
+
+	\subsection*{Ergebnisse: Copy Kernel}	
+	\subsubsection*{OpenCL}
+	\includegraphics[width=0.5\textwidth]{../statistics/intel/opencl/histogram_copy.png}
+	\includegraphics[width=0.5\textwidth]{../statistics/intel/opencl/boxplot_copy.png}
+	\\
+	\begin{center}
+		\begin{tabular}{|l|l|}
+			\toprule
+			\textbf{Mittlere Laufzeit} 		& $12.20ms$ \\
+			\textbf{1. Quartil}				& $11.33ms$ \\
+			\textbf{Median}					& $12.40ms$  \\
+			\textbf{3. Quartil}				& $12.90ms$  \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	
+	\subsubsection*{oneAPI}
+	\includegraphics[width=0.5\textwidth]{../statistics/intel/oneapi/histogram_copy.png}
+	\includegraphics[width=0.5\textwidth]{../statistics/intel/oneapi/boxplot_copy.png}
+	\\
+	\begin{center}
+		\begin{tabular}{|l|l|}
+			\toprule
+			\textbf{Mittlere Laufzeit} 		& $11.15ms$ \\
+			\textbf{1. Quartil}				& $10.40ms$ \\
+			\textbf{Median}					& $11.32ms$  \\
+			\textbf{3. Quartil}				& $11.94ms$  \\
+			\bottomrule
+		\end{tabular}
+	\end{center}
+	\medskip
+	
+	Auch hier wiederholt sich das Bild aus dem Ergebnis von Testsystem 1.
+	Die Verwendung von oneAPI bringt hier einen Speedup von etwa 10\% und ist daher etwas größer als bei Testsystem 1.
+	Trotzdem ist der Effekt hier lange nicht so groß, wie bei der Matrix-Multiplikation.
+	
+	\section*{Zusammenfassung}
+	Zusammenfassend lässt sich sagen, dass die Verwendung von herstellerspezifischen APIs im Vergleich zu OpenCL insbesondere bei Compute-Lastigen Aufgaben \textbf{einen erheblichen Speedup} bringen kann.
+	Möglicherweise ist es durch Optimierungen am OpenCL-Code hinsichtlich der verwendeten Speicherbereiche möglich, das Ergebnis zu Gunsten von OpenCL zu verbessern, jedoch zeigt dieses Experiment, dass bei naiver Implementierung von Compute-Lastigen Algorithmen die Hersteller-APIs nicht durch OpenCL geschlagen werden können.
+	
+	Auch bei Anwendungen, die in erster Linie die Speicherbandbreite der Grafikkarte auslasten, bringen die herstellerspezifischen APIs mitunter einen Vorteil; dieser scheint jedoch nicht so ausgeprägt zu sein wie bei Compute-Lastigen Anwendungen.
+	Möglicherweise gibt es jedoch noch andere Algorithmen, die die Speicherbandbreite noch besser ausnutzen und so einen noch gravierenderen Unterschied feststellen könnten.
 	
 \end{document}
